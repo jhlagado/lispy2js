@@ -8,6 +8,7 @@ angular.module("lispy2Tests", [])
             {name: 'bool false',test: '#f',expect: false}, 
             {name: 'string',test: '"x"',expect: 'x'}, 
             {name: 'list',test: '(list 1 2 3)', expect: [1,2,3]}, 
+            {name: 'define var',test: '(begin (define x 1) x)', expect: 1},  
         ]
     }
 })
