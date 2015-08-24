@@ -1,0 +1,33 @@
+<html ng-app="lispy2App" ng-controller="Main" windowvisible>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>lispy2</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+	</head>
+    <body style="margin:10px;">
+		<h3>lispy2 interpreter in JavaScript</h3>
+		<div class="well">
+			<div class="well" scrolltobottom style="background:white;height:300px;overflow-y: auto;">
+				<div>
+					<div style="margin-bottom:5px;" ng-repeat="line in lines">
+						<div ng-click="setcommand(line.command)"><a><strong> &gt; {{line.command}}</strong></a></div>
+						<div><em>{{line.result}}</em></div>
+					</div>
+				</div>
+			</div>
+			<form>
+				<div class="form-group">
+					<textarea style="height:100px;" ng-model="command" type="text" class="form-control"></textarea>
+				</div>
+				<button type="button" class="btn btn-primary" ng-click="go()">Evaluate</button>
+				<button type="button" class="btn btn-default" ng-click="lines.length = 0">Clear</button>
+			</form>
+			<div><a href="tests.html">Run tests</a>
+		</div>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>        
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.js"></script> 
+		<script src="lispy2.js"></script>
+		<script src="app.js"></script>
+    </body>
+</html>
