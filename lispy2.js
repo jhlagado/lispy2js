@@ -111,12 +111,12 @@
         return env;
     }
     
-    function findEnv(env, variable) {
-        if (variable.str in env)
+    function findEnv(env, v) {
+        if (v.str in env)
             return env;
         else if (env.__outer)
-            return findEnv(env.__outer, variable);
-        throw 'look up error: ' + variable.str;
+            return findEnv(env.__outer, v);
+        throw 'look up error: ' + v.str;
     }
     
     function initSymbols() {
@@ -245,26 +245,22 @@
         
         while (true) {
             
-            if (issymbol(x)) { // variable reference
+            if (issymbol(x)) // v reference
                 return findEnv(env, x)[x.str]
-            } 
-            else if (!isarray(x)) { // constant literal
+            else if (!isarray(x)) // constant literal
                 return x
-            } 
-            else if (x[0] === sym.quote) { // (quote exp)
+            else if (x[0] === sym.quote) // (quote exp)
                 return x[1];
-            } 
-            else if (x[0] === sym.if) { // (if test conseq alt)
+            else if (x[0] === sym.if) // (if test conseq alt)
                 x = eval(x[1], env) ? x[2] : x[3];
-            } 
             else if (x[0] === sym['set!']) { // (set! var exp)
-                var variable = x[1];
-                findEnv(env, variable)[variable.str] = evaluate(x[2], env);
+                var v = x[1];
+                findEnv(env, v)[v.str] = evaluate(x[2], env);
                 return;
             } 
             else if (x[0] === sym.define) { // (define var exp)
-                var variable = x[1];
-                env[variable.str] = evaluate(x[2], env);
+                var v = x[1];
+                env[v.str] = evaluate(x[2], env);
                 return;
             } 
             else if (x[0] === sym.lambda) { // (lambda (var*) exp)
@@ -296,7 +292,6 @@
     }
     
     function expand(x, toplevel) {
-        
         if (!existy(toplevel))
             toplevel = false;
         
@@ -317,9 +312,8 @@
         } 
         else if (x[0] === sym['set!']) {
             require(x, length(x) == 3);
-            var variable = x[1] // (set! non-var exp) => Error
-            require(x, issymbol(variable), 'can set! only a symbol');
-            return [sym['set!'], variable, expand(x[2])]
+            require(x, issymbol(x[1]), 'can set! only a symbol');
+            return [sym['set!'], x[1], expand(x[2])]
         } 
         else if (x[0] === sym.define || x[0] === sym.definemacro) {
             require(x, length(x) >= 3)
@@ -335,13 +329,13 @@
                 require(x, length(x) == 3) // (define non-var/list exp) => Error
                 require(x, issymbol(v), 'can define only a symbol')
                 var exp = expand(x[2])
-                //             if (def == sym.definemacro) {     
-                //                 require(x, toplevel, 'define-macro only allowed at top level')
-                //                 proc = eval(exp)       
-                //                 require(x, callable(proc), 'macro must be a procedure')
-                //                 macro_table[v] = proc    // (define-macro v proc)
-                //                 return None              //  => None; add v:proc to macro_table
-                //             }
+                if (def == sym.definemacro) {
+                    require(x, toplevel, 'define-macro only allowed at top level');
+                    var proc = eval(exp);
+                    require(x, callable(proc), 'macro must be a procedure');
+                    macro_table[v] = proc; // (define-macro v proc)
+                    return; //  => None; add v:proc to macro_table
+                }
                 return [sym.define, v, exp]
             }
         } 
