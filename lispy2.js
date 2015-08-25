@@ -407,7 +407,8 @@
     }
     
     function assign() {
-        if (!arguments.length) return;
+        if (!arguments.length)
+            return;
         var args = argarray(arguments);
         var obj = reduce(args.slice(1), function(acc, arg) {
             for (var key in arg) {
@@ -431,7 +432,7 @@
             return x.reduce(f, acc);
         }
     }
-        
+    
     function isarray(x) {
         return Array.isArray(x)
     }
@@ -457,8 +458,12 @@
     }
     
     function every(x, f) {
+        if (!existy(f))
+            f = function(item) {
+                return item
+            }
         if (existy(x) && x.every) {
-            x.every(x, f);
+            return x.every(f);
         }
     }
     

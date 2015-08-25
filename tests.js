@@ -7,8 +7,18 @@ angular.module("lispy2Tests", [])
             {name: 'bool true',test: '#t',expect: true}, 
             {name: 'bool false',test: '#f',expect: false}, 
             {name: 'string',test: '"x"',expect: 'x'}, 
-            {name: 'list',test: '(list 1 2 3)', expect: [1,2,3]}, 
-            {name: 'define var',test: '(begin (define x 1) x)', expect: 1},  
+            {name: 'list',test: '(list 1 2 3)',expect: [1, 2, 3]}, 
+            {name: 'define var',test: '(begin (define x 1) x)',expect: 1}, 
+            {
+                name: 'define var string',
+                test: '(begin (define x "hello") x)',
+                expect: "hello"
+            }, 
+            {
+                name: 'lambda',
+                test: '(lambda (x) (x))',
+                expect: ""
+            }, 
         ]
     }
 })
@@ -19,7 +29,7 @@ angular.module("lispy2Tests", [])
         var result;
         try {
             result = lispy2.run(data.test);
-        }
+        } 
         catch (e) {
             result = 'exception: ' + e;
         }
@@ -33,7 +43,8 @@ angular.module("lispy2Tests", [])
     });
     
     $scope.fails = $scope.results.reduce(function(acc, item) {
-        if (!item.passed) acc++;
+        if (!item.passed)
+            acc++;
         return acc;
     }, 0);
 

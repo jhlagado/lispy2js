@@ -2,7 +2,7 @@ angular.module("lispy2App", [])
 
 .controller('Main', function($scope) {
     $scope.lines = [];
-    $scope.command = '(begin (define x 1) x)';
+    $scope.command = '(lambda (a) a)';
     
     $scope.go = function() {
         $scope.lines.push({
