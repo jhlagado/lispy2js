@@ -5,6 +5,8 @@ angular.module("lispy2App", [])
     $scope.lines = lines ? JSON.parse(lines) : [];
     
     $scope.go = function() {
+        if (!$scope.command)
+            return;
         try {
             var result = lispy2.run($scope.command);
         } 
