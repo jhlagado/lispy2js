@@ -1,10 +1,8 @@
 angular.module("lispy2App", [])
 
 .controller('Main', function($scope) {
-     $scope.lines = JSON.parse(localStorage['lines']) || [];
-//      $scope.lines = [];
-//    $scope.command = '(lambda (a) a)';
-//    $scope.command = '';
+    var lines = localStorage['lines'];
+    $scope.lines = lines ? JSON.parse(lines) : [];
     
     $scope.go = function() {
         try {
@@ -13,7 +11,7 @@ angular.module("lispy2App", [])
         catch (e) {
             var error = 'exception: ' + e;
         }
-
+        
         $scope.lines.push({
             command: $scope.command,
             result: lispy2.tostring(result),
@@ -22,19 +20,19 @@ angular.module("lispy2App", [])
         if ($scope.lines.length > 5)
             $scope.lines.unshift();
         $scope.command = '';
-        store();        
+        store();
     }
     
-    $scope.clear = function(){
+    $scope.clear = function() {
         $scope.lines.length = 0;
-        store();        
+        store();
     }
-
+    
     $scope.setcommand = function(command) {
         $scope.command = command;
     }
-
-    function store(){
+    
+    function store() {
         localStorage['lines'] = JSON.stringify($scope.lines);
     }
 })
