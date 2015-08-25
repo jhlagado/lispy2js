@@ -15,9 +15,24 @@ angular.module("lispy2Tests", [])
                 expect: "hello"
             }, 
             {
+                name: 'type',
+                test: '(type "")',
+                expect: "string"
+            }, 
+            {
+                name: 'get',
+                test: '(type (get "" "constructor"))',
+                expect: "function"
+            }, 
+            {
                 name: 'lambda',
-                test: '(lambda (x) (x))',
-                expect: ""
+                test: '(type (lambda (x) (x)))',
+                expect: "function"
+            }, 
+            {
+                name: 'set!',
+                test: '(begin (define x "hi") (set! x "bye") x)',
+                expect: "bye"
             }, 
         ]
     }

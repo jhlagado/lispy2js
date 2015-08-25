@@ -21,6 +21,7 @@
     lib.run = run;
     lib.parse = parse;
     lib.evaluate = evaluate;
+    lib.tostring = tostring;
     
     var sym, globalEnv, quotes;
     
@@ -42,6 +43,8 @@
     }
     
     function parse(s) {
+        require(s, isstring(s));
+        require(s, s.trim().length);
         return expand(read(tokzer(s)));
     }
     
@@ -216,6 +219,13 @@
             'eval': function(x) {
                 return evaluate(x);
             },
+            //added from clojure
+            'get': function(a, b) {
+                return a[b];
+            },
+            'type': function(a) {
+                return typeof a;
+            },
         }
         
         var math = pick(Math, ['abs', 'acos', 'asin', 'atan', 'atan2', 
@@ -226,6 +236,9 @@
     }
     
     function evaluate(x, env) {
+        
+        if (!existy(x))
+            x = '';
         
         if (!env)
             env = globalEnv;
@@ -454,7 +467,7 @@
     }
     
     function issymbol(obj) {
-        return obj.constructor == Symbol;
+        return obj && obj.constructor == Symbol;
     }
     
     function every(x, f) {
@@ -485,18 +498,23 @@
     }
     
     function tostring(x) {
-        if (x == true)
-            return '#t'
-        else if (x == false)
-            return '#f'
-        else if (issymbol(x))
-            return x.str;
-        else if (isstring(x))
-            return '"' + x + '"';
-        else if (isarray(x))
-            return '(' + map(x, tostring).join(' ') + ')'
-        else
-            return String(x)
+        if (isNaN(x)) {
+            if (x == true)
+                return '#t'
+            else if (x == false)
+                return '#f'
+            else if (issymbol(x))
+                return x.str;
+            else if (isstring(x))
+                return '"' + x + '"';
+            else if (isarray(x))
+                return '(' + map(x, tostring).join(' ') + ')'
+            else
+                return String(x)
+        } 
+        else {
+            return x;
+        }
     }
 
 }));
