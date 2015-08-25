@@ -30,6 +30,16 @@ angular.module("lispy2Tests", [])
                 expect: "function"
             }, 
             {
+                name: 'lambda run',
+                test: '((lambda (x) x) 1)',
+                expect: 1,
+            }, 
+            {
+                name: 'let macro',
+                test: '(let((x 1)(y 2)) (+ x y))',
+                expect: 3,
+            }, 
+            {
                 name: 'set!',
                 test: '(begin (define x "hi") (set! x "bye") x)',
                 expect: "bye"

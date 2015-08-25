@@ -24,9 +24,24 @@
     lib.tostring = tostring;
     
     var sym, globalEnv, quotes;
+    var macrotable = {let: _let};
     
     initSymbols();
     initGlobals();
+    initMacros();
+    
+    function initMacros() {
+        macrotable['let'] = _let;
+//         evaluate(parse('                                 \
+// (begin                                                   \
+// (define-macro and (lambda args                                             \
+//    (if (null? args) #t                                   \
+//        (if (= (length args) 1) (car args)                \
+//            `(if ,(car args) (and ,@(cdr args)) #f)))))   \
+// )                                                        \
+// '));
+    
+    }
     
     function run(expression) {
         return evaluate(parse(expression))
@@ -42,10 +57,14 @@
         return sym[s];
     }
     
+    function symvalue(symbol) {
+        return symbol.str;
+    }
+    
     function parse(s) {
         require(s, isstring(s));
         require(s, s.trim().length);
-        return expand(read(tokzer(s)));
+        return expand(read(tokzer(s)), true);
     }
     
     function tokzer(s) {
@@ -107,7 +126,7 @@
         if (issymbol(params))
             env[params.str] = args;
         else
-            assign(env, zipobject(params, args));
+            assign(env, zipobject(map(params, symvalue), args));
         return env;
     }
     
@@ -122,12 +141,8 @@
     function initSymbols() {
         sym = [];
         
-        var symbols = 'quote if set! define ' + 
-        'lambda begin define-macro ' + 
-        'quasiquote unquote unquote-splicing ' + 
-        'append cons let';
-        
-        symbols.split(' ').forEach(function(s) {
+        ['quote', 'if', 'set!', 'define', 'lambda', 'begin', 'define-macro', 'quasiquote', 'unquote', 
+            'unquote-splicing', 'append cons', 'let'].forEach(function(s) {
             createSym(s);
         });
         
@@ -308,14 +323,14 @@
                 x.length = 4
             } // (if t c) => (if t c None)
             require(x, length(x) == 4)
-            return map(expand, x)
+            return map(x, expand)
         } 
         else if (x[0] === sym['set!']) {
             require(x, length(x) == 3);
             require(x, issymbol(x[1]), 'can set! only a symbol');
             return [sym['set!'], x[1], expand(x[2])]
         } 
-        else if (x[0] === sym.define || x[0] === sym.definemacro) {
+        else if (x[0] === sym.define || x[0] === sym['define-macro']) {
             require(x, length(x) >= 3)
             var def = x[0];
             var v = x[1];
@@ -323,17 +338,17 @@
             if (isarray(v) && v) { // (define (f args) body)
                 var f = v[0];
                 var args = v.slice(1); //  => (define f (lambda (args) body))
-                return expand([def, f, [_lambda, args] + body])
+                return expand([def, f, [sym.lambda, args].concat(body)])
             } 
             else {
                 require(x, length(x) == 3) // (define non-var/list exp) => Error
                 require(x, issymbol(v), 'can define only a symbol')
                 var exp = expand(x[2])
-                if (def == sym.definemacro) {
+                if (def == sym['define-macro']) {
                     require(x, toplevel, 'define-macro only allowed at top level');
                     var proc = eval(exp);
-                    require(x, callable(proc), 'macro must be a procedure');
-                    macro_table[v] = proc; // (define-macro v proc)
+                    require(x, isfunction(proc), 'macro must be a procedure');
+                    macrotable[v] = proc; // (define-macro v proc)
                     return; //  => None; add v:proc to macro_table
                 }
                 return [sym.define, v, exp]
@@ -352,19 +367,19 @@
             require(x, length(x) >= 3) //  => (lambda (x) (begin e1 e2))
             var vars = x[1];
             var body = x.slice(2);
-            require(x, issymbol(vars) || every(map(vars, function(v) {
+            require(x, issymbol(vars) || all(map(vars, function(v) {
                 return issymbol(v);
             })), 'illegal lambda argument list')
             var exp = length(body) == 1 ? body[0] : cons(sym.begin, body);
             return [sym.lambda, vars, expand(exp)]
         } 
-        //     else if ( x[0] === sym.quasiquote){            // `x => expand_quasiquote(x)
-        //         require(x, length(x)==2)
-        //         return expand_quasiquote(x[1])
-        //     }
-        //     else if ( isa(x[0], Symbol) and x[0] in macro_table){
-        //         return expand(macro_table[x[0]](*x[1:]), toplevel) # (m arg...) 
-        //     }
+        else if (x[0] === sym.quasiquote) { // `x => expand_quasiquote(x)
+            require(x, length(x) == 2)
+            return expand_quasiquote(x[1])
+        } 
+        else if (issymbol(x[0]) && (x[0].str in macrotable)) {
+            return expand(macrotable[x[0].str].apply(null, x.slice(1)), toplevel) // (m arg...) 
+        } 
         else { //        => macroexpand if m isa macro
             return map(x, expand) // (f arg...) => expand each
         }
@@ -375,6 +390,41 @@
             msg = 'wrong length';
         if (!predicate)
             throw 'Syntax Error: ' + tostring(x) + ': ' + msg
+    }
+    
+    function expand_quasiquote(x) {
+        // Expand `x => 'x; `,x => x; `(,@x y) => (append x y) """
+        if (!ispair(x))
+            return [sym.quote, x]
+        
+        require(x, x[0] !== sym.unquotesplicing, "can't splice here")
+        if (x[0] == sym.unquote) {
+            require(x, length(x) == 2);
+            return x[1];
+        } 
+        else if (ispair(x[0]) && x[0][0] == sym.unquotesplicing) {
+            require(x[0], length(x[0]) == 2)
+            return [sym.append, x[0][1], expand_quasiquote(x.slice(1))]
+        } 
+        else
+            return [sym.cons, expand_quasiquote(x[0]), expand_quasiquote(x.slice(1))]
+    }
+    
+    function _let() {
+        var args = argarray(arguments);
+        var x = cons(sym.let, args);
+        require(x, length(args) > 1);
+        var bindings = args[0];
+        var body = args.slice(1);
+        require(x, all(map(bindings, function(b) {
+            return isarray(b) && length(b) == 2 && issymbol(b[0]);
+        }, "illegal binding list")));
+        var uz = unzip(bindings);
+        var vars = uz[0];
+        var vals = uz[1];
+        //[[_lambda, list(vars)]+map(expand, body)] + map(expand, vals)
+        var f = [[sym.lambda, vars].concat(map(body, expand))].concat(map(vals, expand));
+        return f;
     }
     
     function pick(object, keys) {
@@ -403,6 +453,28 @@
         }
         return result;
     }
+    
+    function unzip(array) {
+        if (!(array && array.length)) {
+            return [];
+        }
+        var length = 0;
+        array = filter(array, function(group) {
+            if (isarray(group)) {
+                length = Math.max(group.length, length);
+                return true;
+            }
+        });
+        var result = Array(length);
+        var index = -1;
+        while (++index < length) {
+            result[index] = map(array, function(item) {
+                return item[index]
+            });
+        }
+        return result;
+    }
+    
     
     function argarray(args) {
         return Array.prototype.slice.call(args);
@@ -460,11 +532,23 @@
         return x === true || x === false;
     }
     
+    function isfunction(x) {
+        return typeof value == 'function' || false;
+    }
+    
     function issymbol(obj) {
         return obj && obj.constructor == Symbol;
     }
     
-    function every(x, f) {
+    function filter(array, func) {
+        return array.reduce(function(acc, item) {
+            if (func(item))
+                acc.push(item);
+            return acc;
+        }, [])
+    }
+    
+    function all(x, f) {
         if (!existy(f))
             f = function(item) {
                 return item
