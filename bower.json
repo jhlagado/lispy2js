@@ -1,7 +1,7 @@
 {
-  "name": "lispy2",
+  "name": "lispy2js",
   "version": "0.0.1",
-  "main": "bOTL.js",
+  "main": "lispy2.js",
   "license": "emlynoregan",
   "ignore": [
     "**/.*",
