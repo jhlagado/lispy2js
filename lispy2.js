@@ -53,10 +53,6 @@
         return sym[s];
     }
     
-    function symvalue(symbol) {
-        return symbol.str;
-    }
-    
     function parse(s) {
         require(s, isstring(s));
         require(s, s.trim().length);
@@ -120,9 +116,13 @@
             __outer: outer,
         };
         if (issymbol(params))
-            env[params.str] = args;
-        else
-            assign(env, zipobject(map(params, symvalue), args));
+            envDefine(env, params, args);
+        else {
+            var dict = zipobject(map(params, function(symbol) {
+                return symbol.str;
+            }), args);
+            envAssign(env, dict);
+        }
         return env;
     }
     
@@ -134,8 +134,24 @@
         throw 'look up error: ' + v.str;
     }
     
+    function envGet(env, v) {
+        return findEnv(env, v)[v.str];
+    }
+    
+    function envDefine(env, v, value) {
+        env[v.str] = value;
+    }
+    
+    function envSet(env, v, value) {
+        return findEnv(env, v)[v.str] = value;
+    }
+    
+    function envAssign(env, dict) {
+        assign(env, dict);
+    }
+    
     function initSymbols() {
-        sym = [];
+        sym = {};
         
         ['quote', 'if', 'set!', 'define', 'lambda', 'begin', 'define-macro', 'quasiquote', 'unquote', 
             'unquote-splicing', 'append cons', 'let'].forEach(function(s) {
@@ -243,20 +259,11 @@
             'ceil', 'cos', 'exp', 'floor', 'log', 'max', 'min', 'pow', 
             'random', 'round', 'sin', 'sqrt', 'tan']);
         
-        return assign(globalEnv, basics, math);
+        return envAssign(globalEnv, assign({}, basics, math));
     }
     
     function initMacros() {
         macrotable['let'] = _let;
-    //         evaluate(parse('                                 \
-    // (begin                                                   \
-    // (define-macro and (lambda args                                             \
-    //    (if (null? args) #t                                   \
-    //        (if (= (length args) 1) (car args)                \
-    //            `(if ,(car args) (and ,@(cdr args)) #f)))))   \
-    // )                                                        \
-    // '));
-    
     }
     
     function evaluate(x, env) {
@@ -270,7 +277,7 @@
         while (true) {
             
             if (issymbol(x)) // v reference
-                return findEnv(env, x)[x.str]
+                return envGet(env, x);
             else if (!isarray(x)) // constant literal
                 return x
             else if (x[0] === sym.quote) // (quote exp)
@@ -279,12 +286,12 @@
                 x = evaluate(x[1], env) ? x[2] : x[3];
             else if (x[0] === sym['set!']) { // (set! var exp)
                 var v = x[1];
-                findEnv(env, v)[v.str] = evaluate(x[2], env);
+                envSet(env, v, evaluate(x[2], env));
                 return;
             } 
             else if (x[0] === sym.define) { // (define var exp)
                 var v = x[1];
-                env[v.str] = evaluate(x[2], env);
+                envDefine(env, v, evaluate(x[2], env));
                 return;
             } 
             else if (x[0] === sym.lambda) { // (lambda (var*) exp)
@@ -542,7 +549,7 @@
     }
     
     function isfunction(x) {
-        return typeof value == 'function' || false;
+        return typeof x == 'function' || false;
     }
     
     function issymbol(obj) {
