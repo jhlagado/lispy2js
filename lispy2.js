@@ -585,9 +585,9 @@
     }
     
     function tostring(x) {
-        if (x == true)
+        if (x === true)
             return '#t'
-        else if (x == false)
+        else if (x === false)
             return '#f'
         else if (isNaN(x)) {
             if (issymbol(x))

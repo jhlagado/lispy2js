@@ -3,17 +3,18 @@ angular.module("lispy2Tests", [])
 .factory('testdata', function() {
     return {
         tests: [
-
+            
             {test: '\
 (define combine (lambda (f)\
     (lambda (x y) \
-        (if (undefined? x) (quote ()) \
+        (if (null? x) (quote ()) \
            (f (list (car x) (car y)) \
              ((combine f) (cdr x) (cdr y)))))))\
-             ', expect:undefined},
-
+             ',expect: undefined}, 
+            
             {test: '(define zip (combine cons))',expect: undefined}, 
             {test: '(zip (list 1 2 3 4) (list 5 6 7 8))',expect: [[1, 5], [2, 6], [3, 7], [4, 8]]}, 
+            
             
             {test: '(quote (testing 1 (2.0) -3.14e159))',expect: [lispy2.createSym('testing'), 1, [2.0], -3.14e159]}, 
             {test: '(+ 2 2)',expect: 4}, 
@@ -38,47 +39,61 @@ angular.module("lispy2Tests", [])
             {test: '(define abs (lambda (n) ((if (> n 0) + -) 0 n)))',expect: undefined}, 
             {test: '(list (abs -3) (abs 0) (abs 3))',expect: [3, 0, 3]}, 
 
-            {name: 'number',test: '1',expect: 1}, 
-            {name: 'bool true',test: '#t',expect: true}, 
-            {name: 'bool false',test: '#f',expect: false}, 
-            {name: 'string',test: '"x"',expect: 'x'}, 
-            {name: 'list',test: '(list 1 2 3)',expect: [1, 2, 3]}, 
-            {name: 'define var',test: '(begin (define x 1) x)',expect: 1}, 
-            {
-                name: 'define var string',
-                test: '(begin (define x "hello") x)',
-                expect: "hello"
-            }, 
-            {
-                name: 'type',
-                test: '(type "")',
-                expect: "string"
-            }, 
-            {
-                name: 'get',
-                test: '(type (get "" "constructor"))',
-                expect: "function"
-            }, 
-            {
-                name: 'lambda',
-                test: '(type (lambda (x) (x)))',
-                expect: "function"
-            }, 
-            {
-                name: 'lambda run',
-                test: '((lambda (x) x) 1)',
-                expect: 1,
-            }, 
-            {
-                name: 'let macro',
-                test: '(let((x 1)(y 2)) (+ x y))',
-                expect: 3,
-            }, 
-            {
-                name: 'set!',
-                test: '(begin (define x "hi") (set! x "bye") x)',
-                expect: "bye"
-            }, 
+            {test: '(define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))',expect: undefined}, 
+            {test: '(take 2 (list 1 2 3))',expect: [1, 2]}, 
+            {test: '(define drop (lambda (n seq) (if (<= n 0) seq (drop (- n 1) (cdr seq)))))',expect: undefined}, 
+            {test: '(drop 1 (list 1 2 3))',expect: [2, 3]}, 
+            {test: '(define mid (lambda (seq) (/ (length seq) 2)))',expect: undefined}, 
+//             {test: '(mid (list 1 2 3))',expect: 2}, 
+
+//             {test: '(define riff-shuffle (lambda (deck) ' + 
+//             '(begin ((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))',expect: undefined}, 
+            
+//             {test: '(riff-shuffle (list 1 2 3 4 5 6 7 8))',expect: [1, 5, 2, 6, 3, 7, 4, 8]}, 
+//             {test: '((repeat riff-shuffle) (list 1 2 3 4 5 6 7 8))',expect: [1, 3, 5, 7, 2, 4, 6, 8]}, 
+//             {test: '(riff-shuffle (riff-shuffle (riff-shuffle (list 1 2 3 4 5 6 7 8))))',expect: [1, 2, 3, 4, 5, 6, 7, 8]}, 
+            
+//             {name: 'number',test: '1',expect: 1}, 
+//             {name: 'bool true',test: '#t',expect: true}, 
+//             {name: 'bool false',test: '#f',expect: false}, 
+//             {name: 'string',test: '"x"',expect: 'x'}, 
+//             {name: 'list',test: '(list 1 2 3)',expect: [1, 2, 3]}, 
+//             {name: 'define var',test: '(begin (define x 1) x)',expect: 1}, 
+//             {
+//                 name: 'define var string',
+//                 test: '(begin (define x "hello") x)',
+//                 expect: "hello"
+//             }, 
+//             {
+//                 name: 'type',
+//                 test: '(type "")',
+//                 expect: "string"
+//             }, 
+//             {
+//                 name: 'get',
+//                 test: '(type (get "" "constructor"))',
+//                 expect: "function"
+//             }, 
+//             {
+//                 name: 'lambda',
+//                 test: '(type (lambda (x) (x)))',
+//                 expect: "function"
+//             }, 
+//             {
+//                 name: 'lambda run',
+//                 test: '((lambda (x) x) 1)',
+//                 expect: 1,
+//             }, 
+//             {
+//                 name: 'let macro',
+//                 test: '(let((x 1)(y 2)) (+ x y))',
+//                 expect: 3,
+//             }, 
+//             {
+//                 name: 'set!',
+//                 test: '(begin (define x "hi") (set! x "bye") x)',
+//                 expect: "bye"
+//             }, 
         ]
     }
 })
@@ -87,19 +102,22 @@ angular.module("lispy2Tests", [])
     
     $scope.results = testdata.tests.map(function(data) {
         var result;
-        try {
+
             result = lispy2.run(data.test);
-        } 
-        catch (e) {
-            result = 'exception: ' + e;
-        }
+
+//         try {
+//             result = lispy2.run(data.test);
+//         } 
+//         catch (e) {
+//             result = 'exception: ' + e;
+//         }
         return {
             name: data.name,
             test: data.test,
             
             passed: _.isFunction(data.expect) ? 
             data.expect(result) : _.isEqual(data.expect, result),
-
+            
             result: lispy2.tostring(result),
             expect: lispy2.tostring(data.expect),
         }
@@ -113,11 +131,6 @@ angular.module("lispy2Tests", [])
 
 })
 
-//     ("""(define combine (lambda (f)
-//     (lambda (x y)
-//       (if (undefined? x) (quote ())
-//           (f (list (car x) (car y))
-//              ((combine f) (cdr x) (cdr y)))))))""", undefined),
 //     ("""(define riff-shuffle (lambda (deck) (begin
 //     (define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))
 //     (define drop (lambda (n seq) (if (<= n 0) seq (drop (- n 1) (cdr seq)))))
