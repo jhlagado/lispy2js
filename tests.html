@@ -11,7 +11,7 @@
         <h4 ng-if="fails == 0" style="color:green;">Success!</h4>
         
         <div class="well" style="margin:5px;padding:5px;" ng-repeat="data in results">
-            <div>Name: {{data.name}}</div>
+            <div ng-if="data.name">Name: {{data.name}}</div>
             <div>Test: {{data.test}}</div>
             <div ng-if="!data.passed" style="color:red;">Failed</div>
             <div>Expected: {{data.expect}}</div>

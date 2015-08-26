@@ -19,36 +19,32 @@
     lib.version = '0.0.0';
     
     lib.run = run;
+    lib.init = init;
     lib.parse = parse;
     lib.evaluate = evaluate;
     lib.tostring = tostring;
+    lib.createSym = createSym;
     
     var sym, globalEnv, quotes;
     var macrotable = {let: _let};
     
-    initSymbols();
-    initGlobals();
-    initMacros();
-    
-    function initMacros() {
-        macrotable['let'] = _let;
-//         evaluate(parse('                                 \
-// (begin                                                   \
-// (define-macro and (lambda args                                             \
-//    (if (null? args) #t                                   \
-//        (if (= (length args) 1) (car args)                \
-//            `(if ,(car args) (and ,@(cdr args)) #f)))))   \
-// )                                                        \
-// '));
-    
-    }
+    init();
     
     function run(expression) {
         return evaluate(parse(expression))
     }
     
+    function init() {
+        initSymbols();
+        initGlobals();
+        initMacros();
+    }
+    
     function Symbol(str) {
         this.str = str;
+        this.toString = function() {
+            return 'Symbol' + this.str;
+        }
     }
     
     function createSym(s) {
@@ -250,6 +246,19 @@
         return assign(globalEnv, basics, math);
     }
     
+    function initMacros() {
+        macrotable['let'] = _let;
+    //         evaluate(parse('                                 \
+    // (begin                                                   \
+    // (define-macro and (lambda args                                             \
+    //    (if (null? args) #t                                   \
+    //        (if (= (length args) 1) (car args)                \
+    //            `(if ,(car args) (and ,@(cdr args)) #f)))))   \
+    // )                                                        \
+    // '));
+    
+    }
+    
     function evaluate(x, env) {
         
         if (!existy(x))
@@ -267,7 +276,7 @@
             else if (x[0] === sym.quote) // (quote exp)
                 return x[1];
             else if (x[0] === sym.if) // (if test conseq alt)
-                x = eval(x[1], env) ? x[2] : x[3];
+                x = evaluate(x[1], env) ? x[2] : x[3];
             else if (x[0] === sym['set!']) { // (set! var exp)
                 var v = x[1];
                 findEnv(env, v)[v.str] = evaluate(x[2], env);
@@ -346,7 +355,7 @@
                 var exp = expand(x[2])
                 if (def == sym['define-macro']) {
                     require(x, toplevel, 'define-macro only allowed at top level');
-                    var proc = eval(exp);
+                    var proc = evaluate(exp);
                     require(x, isfunction(proc), 'macro must be a procedure');
                     macrotable[v] = proc; // (define-macro v proc)
                     return; //  => None; add v:proc to macro_table
@@ -559,7 +568,7 @@
     }
     
     function ispair(x) {
-        return isarray(x) && x.length == 2;
+        return isarray(x) && x.length;
     }
     
     function cons(x, y) {
@@ -576,12 +585,12 @@
     }
     
     function tostring(x) {
-        if (isNaN(x)) {
-            if (x == true)
-                return '#t'
-            else if (x == false)
-                return '#f'
-            else if (issymbol(x))
+        if (x == true)
+            return '#t'
+        else if (x == false)
+            return '#f'
+        else if (isNaN(x)) {
+            if (issymbol(x))
                 return x.str;
             else if (isstring(x))
                 return '"' + x + '"';
