@@ -31,7 +31,9 @@
     init();
     
     function run(expression) {
-        return evaluate(parse(expression))
+        var s = expression.replace(/\n/g, ' '); //strip \n
+        var p = parse(s);
+        return evaluate(p)
     }
     
     function init() {
@@ -63,6 +65,7 @@
         return function() {
             if (!s.length)
                 return undefined;
+            // see https://regex101.com/#javascript
             var regex = /\s*(,@|[('`,)]|'(?:[\\].|[^\\'])*'|;.*|[^\s(''`,;)]*)(.*)/g;
             var list = regex.exec(s);
             s = list[2];
@@ -154,12 +157,12 @@
         sym = {};
         
         ['quote', 'if', 'set!', 'define', 'lambda', 'begin', 'define-macro', 'quasiquote', 'unquote', 
-            'unquote-splicing', 'append cons', 'let'].forEach(function(s) {
+            'unquote-splicing', 'append', 'cons', 'let'].forEach(function(s) {
             createSym(s);
         });
         
         quotes = {
-            '"': sym.quote,
+            '\'' : sym.quote,
             '`': sym.quasiquote,
             ',': sym.unquote,
             ',@': sym.unquotesplicing
@@ -298,7 +301,7 @@
                 var vars = x[1];
                 var exp = x[2];
                 return function() {
-                    return evaluate(exp, createEnv(vars, arguments, env));
+                    return evaluate(exp, createEnv(vars, argarray(arguments), env));
                 }
             } 
             else if (x[0] === sym.begin) { // (begin exp+)
@@ -364,7 +367,7 @@
                     require(x, toplevel, 'define-macro only allowed at top level');
                     var proc = evaluate(exp);
                     require(x, isfunction(proc), 'macro must be a procedure');
-                    macrotable[v] = proc; // (define-macro v proc)
+                    macrotable[v.str] = proc; // (define-macro v proc)
                     return; //  => None; add v:proc to macro_table
                 }
                 return [sym.define, v, exp]

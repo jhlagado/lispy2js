@@ -3,16 +3,20 @@ angular.module("lispy2Tests", [])
 .factory('testdata', function() {
     return {
         tests: [
-
-//             {test: '\
-// (begin                                                   \
-// (define-macro and (lambda args                                             \
-//    (if (null? args) #t                                   \
-//        (if (= (length args) 1) (car args)                \
-//            `(if ,(car args) (and ,@(cdr args)) #f)))))   \
-// )                                                        \
-//              ',expect: undefined}, 
-//             {test: '(and #t #t)',expect: true}, 
+            {test: "'(1 2 7)",expect: [1, 2, 7]}, 
+            {test: "`(1 2 ,(+ 3 4))",expect: [1, 2, 7]}, 
+            {test: "`(1 ,@(list 1 1 1) 1)",expect: [1,1,1,1,1]}, 
+            
+            
+            {test: '\
+(begin                                                   \
+(define-macro and (lambda args                                             \
+   (if (null? args) #t                                   \
+       (if (= (length args) 1) (car args)                \
+           `(if ,(car args) (and ,@(cdr args)) #f)))))   \
+)                                                        \
+            ',expect: undefined}, 
+            {test: '(and #t #t)',expect: true}, 
             
             {test: '\
 (define combine (lambda (f)\
@@ -48,16 +52,16 @@ angular.module("lispy2Tests", [])
             {test: '(fact 50)',expect: 30414093201713378043612608166064768844377641568960512000000000000}, 
             {test: '(define abs (lambda (n) ((if (> n 0) + -) 0 n)))',expect: undefined}, 
             {test: '(list (abs -3) (abs 0) (abs 3))',expect: [3, 0, 3]}, 
-
+            
             {test: '(define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))',expect: undefined}, 
             {test: '(take 2 (list 1 2 3))',expect: [1, 2]}, 
             {test: '(define drop (lambda (n seq) (if (<= n 0) seq (drop (- n 1) (cdr seq)))))',expect: undefined}, 
             {test: '(drop 1 (list 1 2 3))',expect: [2, 3]}, 
             {test: '(define mid (lambda (seq) (/ (length seq) 2)))',expect: undefined}, 
             {test: '(mid (list 1 2 3 4))',expect: 2}, 
-
+            
             {test: '(define riff-shuffle (lambda (deck) ' + 
-            '(begin ((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))',expect: undefined}, 
+                '(begin ((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))',expect: undefined}, 
             
             {test: '(riff-shuffle (list 1 2 3 4 5 6 7 8))',expect: [1, 5, 2, 6, 3, 7, 4, 8]}, 
             {test: '((repeat riff-shuffle) (list 1 2 3 4 5 6 7 8))',expect: [1, 3, 5, 7, 2, 4, 6, 8]}, 
@@ -113,8 +117,8 @@ angular.module("lispy2Tests", [])
     $scope.results = testdata.tests.map(function(data) {
         var result;
 
-//             result = lispy2.run(data.test);
-
+        //             result = lispy2.run(data.test);
+        
         try {
             result = lispy2.run(data.test);
         } 
