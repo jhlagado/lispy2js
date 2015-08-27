@@ -11,7 +11,7 @@ angular.module("lispy2App", [])
             var result = lispy2.run($scope.command);
         } 
         catch (e) {
-            var error = 'exception: ' + e;
+            var error = e.msg;
         }
         
         $scope.lines.push({

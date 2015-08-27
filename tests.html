@@ -14,7 +14,7 @@
             <div ng-if="data.name">Name: {{data.name}}</div>
             <div>Test: {{data.test}}</div>
             <div ng-if="!data.passed" style="color:red;">Failed</div>
-            <div>Expected: {{data.expect}}</div>
+            <div ng-if="data.expect">Expected: {{data.expect}}</div>
             <div>Result: {{data.result}}</div>
         </div>
         <div><a href="index.html">Go back</a>

@@ -24,6 +24,9 @@
     lib.evaluate = evaluate;
     lib.tostring = tostring;
     lib.createSym = createSym;
+    lib.Symbol = Symbol;
+    lib.SyntaxError = SyntaxError;
+    lib.RuntimeError = RuntimeError;
     
     var sym, globalEnv, quotes;
     var macrotable = {let: _let};
@@ -45,7 +48,7 @@
     function Symbol(str) {
         this.str = str;
         this.toString = function() {
-            return 'Symbol' + this.str;
+            return this.str;
         }
     }
     
@@ -87,11 +90,11 @@
                 }
             } 
             else if (token == ')')
-                throw ('unexpected )')
+                throw new SyntaxError('unexpected )')
             else if (token in quotes)
                 return [quotes[token], read(tokzer)]
             else if (token == undefined)
-                throw ('unexpected EOF in list')
+                throw new SyntaxError('unexpected EOF in list')
             else
                 return atom(token)
         
@@ -121,6 +124,10 @@
         if (issymbol(params))
             envDefine(env, params, args);
         else {
+            if (length(args) != length(params)) {
+                throw new SyntaxError('Expected ' + length(params) + 
+                ' args, got ' + length(args) + ' args');
+            }
             var dict = zipobject(map(params, function(symbol) {
                 return symbol.str;
             }), args);
@@ -134,7 +141,7 @@
             return env;
         else if (env.__outer)
             return findEnv(env.__outer, v);
-        throw 'look up error: ' + v.str;
+        throw new RuntimeError('Could not lookup ' + v.str);
     }
     
     function envGet(env, v) {
@@ -162,7 +169,7 @@
         });
         
         quotes = {
-            '\'' : sym.quote,
+            '\'': sym.quote,
             '`': sym.quasiquote,
             ',': sym.unquote,
             ',@': sym.unquotesplicing
@@ -319,7 +326,7 @@
                     return proc.apply(env, exps);
                 } 
                 else {
-                    throw 'ERROR: ' + proc + ' is not a function.'
+                    throw new RuntimeError(proc + ' is not a function.')
                 }
             }
         }
@@ -408,7 +415,7 @@
         if (!existy(msg))
             msg = 'wrong length';
         if (!predicate)
-            throw 'Syntax Error: ' + tostring(x) + ': ' + msg
+            throw new SyntaxError(tostring(x) + ': ' + msg);
     }
     
     function expand_quasiquote(x) {
@@ -612,6 +619,14 @@
         else {
             return x;
         }
+    }
+    
+    function SyntaxError(msg) {
+        this.msg = 'SyntaxError: ' + msg;
+    }
+    
+    function RuntimeError(msg) {
+        this.msg = 'RuntimeError: ' + msg;
     }
 
 }));
