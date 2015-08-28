@@ -19,7 +19,7 @@ angular.module("lispy2App", [])
             result: lispy2.tostring(result),
             error: error,
         });
-        if ($scope.lines.length > 100)
+        if ($scope.lines.length > 1000)
             $scope.lines.unshift();
         $scope.command = '';
         store();

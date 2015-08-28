@@ -11,7 +11,7 @@
 			<div class="well" scrolltobottom style="background:white;height:300px;overflow-y: auto;">
 				<div>
 					<div style="margin-bottom:5px;" ng-repeat="line in lines track by $index">
-						<div ng-click="setcommand(line.command)"><a><strong> &gt; {{line.command}}</strong></a></div>
+						<div style="white-space:pre;" ng-click="setcommand(line.command)"><a><strong> &gt; {{line.command}}</strong></a></div>
 						<div ng-if="line.result"><em>{{line.result}}</em></div>
 						<div ng-if="line.error" style="color:red;"><em>{{line.error}}</em></div>
 					</div>

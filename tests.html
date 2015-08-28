@@ -12,7 +12,7 @@
         
         <div class="well" style="margin:5px;padding:5px;" ng-repeat="data in results">
             <div ng-if="data.name">Name: {{data.name}}</div>
-            <div>Test: {{data.test}}</div>
+            <div style="white-space:pre">Test: {{data.test}}</div>
             <div ng-if="!data.passed" style="color:red;">Failed</div>
             <div ng-if="data.expect">Expected: {{data.expect}}</div>
             <div>Result: {{data.result}}</div>

@@ -28,13 +28,12 @@
     lib.SyntaxError = SyntaxError;
     lib.RuntimeError = RuntimeError;
     
-    var sym, globalEnv, quotes;
-    var macrotable = {let: _let};
+    var sym, globalEnv, quotes, EOF, macrotable;
     
     init();
     
     function run(expression) {
-        var s = expression.replace(/\n/g, ' '); //strip \n
+        var s = expression; //.replace(/\n/g, ' '); //strip \n
         var p = parse(s);
         return evaluate(p)
     }
@@ -65,14 +64,22 @@
     }
     
     function tokzer(s) {
+        var lines = s.split('\n');
+        var line = '';
         return function() {
-            if (!s.length)
-                return undefined;
-            // see https://regex101.com/#javascript
-            var regex = /\s*(,@|[('`,)]|'(?:[\\].|[^\\'])*'|;.*|[^\s(''`,;)]*)(.*)/g;
-            var list = regex.exec(s);
-            s = list[2];
-            return list[1];
+            while (true) {
+                if (!line.length)
+                    line = lines.shift();
+                if (line == undefined)
+                    return EOF;
+                // see https://regex101.com/#javascript
+                var regex = /\s*(,@|[('`,)]|'(?:[\\].|[^\\'])*'|;.*|[^\s(''`,;)]*)(.*)/g;
+                var list = regex.exec(line);
+                var token = list[1];
+                line = list[2];
+                if (token.length && !startswith(token, ';'))
+                    return token;
+            }
         }
     }
     
@@ -93,14 +100,14 @@
                 throw new SyntaxError('unexpected )')
             else if (token in quotes)
                 return [quotes[token], read(tokzer)]
-            else if (token == undefined)
+            else if (token == EOF)
                 throw new SyntaxError('unexpected EOF in list')
             else
                 return atom(token)
         
         }
-        var token1 = tokzer()
-        return token1 != undefined ? readAhead(token1) : undefined;
+        var token1 = tokzer();
+        return token1 == EOF ? EOF : readAhead(token1);
     }
     
     function atom(token) {
@@ -162,6 +169,8 @@
     
     function initSymbols() {
         sym = {};
+        
+        EOF = createSym('EOF');
         
         ['quote', 'if', 'set!', 'define', 'lambda', 'begin', 'define-macro', 'quasiquote', 'unquote', 
             'unquote-splicing', 'append', 'cons', 'let'].forEach(function(s) {
@@ -256,7 +265,10 @@
             'eval': function(x) {
                 return evaluate(x);
             },
-            //added from clojure
+            'display': function(x) {
+                console.log(isstring(x) ? x : tostring(x));
+            },
+            //added by jh
             'get': function(a, b) {
                 return a[b];
             },
@@ -273,13 +285,22 @@
     }
     
     function initMacros() {
+        macrotable = {};
         macrotable['let'] = _let;
+        evaluate(parse(
+        '(begin                                                   \n' + 
+        '(define-macro and (lambda args                           \n' + 
+        '   (if (null? args) #t                                   \n' + 
+        '       (if (= (length args) 1) (car args)                \n' + 
+        '           `(if ,(car args) (and ,@(cdr args)) #f)))))   \n' + 
+        ')                                                        \n'
+        ));
     }
     
     function evaluate(x, env) {
         
         if (!existy(x))
-            x = '';
+            return x;
         
         if (!env)
             env = globalEnv;
@@ -619,6 +640,10 @@
         else {
             return x;
         }
+    }
+    
+    function startswith(string, target) {
+        return string.indexOf(target) == 0;
     }
     
     function SyntaxError(msg) {
