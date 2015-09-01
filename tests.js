@@ -13,14 +13,13 @@ angular.module("lispy2Tests", [])
             {test: "`(1 2 ,(+ 3 4))",expect: [1, 2, 7]}, 
             {test: "`(1 ,@(list 1 1 1) 1)",expect: [1, 1, 1, 1, 1]}, 
             
-            
             {test: '(and #t #t)',expect: true}, 
             
             {test: '\
-(define combine (lambda (f)\
-    (lambda (x y) \
-        (if (null? x) (quote ()) \
-           (f (list (car x) (car y)) \
+(define combine (lambda (f)\n\
+    (lambda (x y) \n\
+        (if (null? x) (quote ()) \n\
+           (f (list (car x) (car y)) \n\
              ((combine f) (cdr x) (cdr y)))))))\
              ',expect: undefined}, 
             
@@ -51,14 +50,14 @@ angular.module("lispy2Tests", [])
             {test: '(define abs (lambda (n) ((if (> n 0) + -) 0 n)))',expect: undefined}, 
             {test: '(list (abs -3) (abs 0) (abs 3))',expect: [3, 0, 3]}, 
             
-            {test: '(define take (lambda (n seq) (if (<= n 0) (quote ()) (cons (car seq) (take (- n 1) (cdr seq))))))',expect: undefined}, 
+            {test: '(define take (lambda (n seq) (if (<= n 0) (quote ()) \n (cons (car seq) (take (- n 1) (cdr seq))))))',expect: undefined}, 
             {test: '(take 2 (list 1 2 3))',expect: [1, 2]}, 
             {test: '(define drop (lambda (n seq) (if (<= n 0) seq (drop (- n 1) (cdr seq)))))',expect: undefined}, 
             {test: '(drop 1 (list 1 2 3))',expect: [2, 3]}, 
             {test: '(define mid (lambda (seq) (/ (length seq) 2)))',expect: undefined}, 
             {test: '(mid (list 1 2 3 4))',expect: 2}, 
             
-            {test: '(define riff-shuffle (lambda (deck) ' + 
+            {test: '(define riff-shuffle (lambda (deck) \n' + 
                 '(begin ((combine append) (take (mid deck) deck) (drop (mid deck) deck)))))',expect: undefined}, 
             
             {test: '(riff-shuffle (list 1 2 3 4 5 6 7 8))',expect: [1, 5, 2, 6, 3, 7, 4, 8]}, 
@@ -105,15 +104,17 @@ angular.module("lispy2Tests", [])
             '        (if (> start end) acc (sumsq-acc (+ start 1) end (+ (* start start) acc))))\n' +
             '     (sumsq-acc start end 0))', expect:undefined},
             {test: '(sum-squares-range 1 3000)', expect:9004500500}, // Tests tail recursion
-            //     {test: '(call/cc (lambda (throw) (+ 5 (* 10 (throw 1))))) ;; throw', expect:1),
-            //     {test: '(call/cc (lambda (throw) (+ 5 (* 10 1)))) ;; do not throw', expect:15),
-            //     ("""(call/cc (lambda (throw) 
-            //          (+ 5 (* 10 (call/cc (lambda (escape) (* 100 (escape 3)))))))) ; 1 level""", 35),
-            //     ("""(call/cc (lambda (throw) 
-            //          (+ 5 (* 10 (call/cc (lambda (escape) (* 100 (throw 3)))))))) ; 2 levels""", 3),
-            //     ("""(call/cc (lambda (throw) 
-            //          (+ 5 (* 10 (call/cc (lambda (escape) (* 100 1))))))) ; 0 levels""", 1005),
-            //     {test: '(* 1i 1i)", -1), ("(sqrt -1)', 1j),
+            {test: '(call/cc (lambda (throw) (+ 5 (* 10 (throw 1))))) ;; throw', expect:1},
+            {test: '(call/cc (lambda (throw) (+ 5 (* 10 1)))) ;; do not throw', expect:15},
+            {test:'(call/cc (lambda (throw) \n' + 
+                      '(+ 5 (* 10 (call/cc (lambda (escape) (* 100 (escape 3)))))))) ; 1 level', expect:35},
+            {test:'(call/cc (lambda (throw)  \n' + 
+                      '(+ 5 (* 10 (call/cc (lambda (escape) (* 100 (throw 3)))))))) ; 2 levels', expect:3},
+            {test:'(call/cc (lambda (throw)  \n' + 
+            '(+ 5 (* 10 (call/cc (lambda (escape) (* 100 1))))))) ; 0 levels', expect:1005},
+
+//             {test: '(* 1i 1i)", -1), ("(sqrt -1)', 1j), //no support for complex numbers
+
             {test: '(let ((a 1) (b 2)) (+ a b))', expect:3},
             {test: '(let ((a 1) (b 2 3)) (+ a b))', expect:expectSyntaxError},
             {test: '(and 1 2 3)", 3), ("(and (> 2 1) 2 3)', expect:3}, 
@@ -200,7 +201,21 @@ angular.module("lispy2Tests", [])
 
 .controller('Tests', function($scope, testdata) {
     
+    var output = new function Output(){
+        this.lines = [];
+        this.log = function(msg){
+            this.lines.push(msg);
+        }
+        this.warn = this.log;
+        this.error = this.log;
+    }
+
+    lispy2.setoutput(output);
+
     $scope.results = testdata.tests.map(function(data) {
+
+        output.lines = [];
+
         var result, error;
         try {
             result = lispy2.run(data.test);
@@ -213,6 +228,7 @@ angular.module("lispy2Tests", [])
             name: data.name,
             test: data.test,
             result: error ? error.msg : lispy2.tostring(result),
+            output: output.lines,
         }
         if (_.isFunction(data.expect)) {
             line.passed = data.expect(data, result, error);

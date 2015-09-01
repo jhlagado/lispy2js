@@ -18,6 +18,7 @@
     lib.name = 'lispy2';
     lib.version = '0.0.0';
     
+    lib.setoutput = setoutput;
     lib.run = run;
     lib.init = init;
     lib.parse = parse;
@@ -28,9 +29,16 @@
     lib.SyntaxError = SyntaxError;
     lib.RuntimeError = RuntimeError;
     
-    var sym, globalEnv, quotes, EOF, macrotable;
+    var sym, globalEnv, quotes, EOF, macrotable, output;
     
     init();
+
+    //outputs are objects that support the js logging interface 
+    //e.g. console
+    //they must support the method log()
+    function setoutput(aoutput) {
+        output = aoutput;
+    }
     
     function run(expression) {
         var s = expression; //.replace(/\n/g, ' '); //strip \n
@@ -263,11 +271,13 @@
                 return proc.apply(null, args);
             },
             'eval': function(x) {
-                return evaluate(x);
+                return evaluate(x, output);
             },
             'display': function(x) {
-                console.log(isstring(x) ? x : tostring(x));
+                output.log(isstring(x) ? x : tostring(x));
             },
+            'call/cc': callcc,
+
             //added by jh
             'get': function(a, b) {
                 return a[b];
@@ -473,6 +483,36 @@
         var f = [[sym.lambda, vars].concat(map(body, expand))].concat(map(vals, expand));
         return f;
     }
+
+    // def callcc(proc):
+    //     "Call proc with current continuation; escape only"
+    //     ball = RuntimeWarning("Sorry, can't continue this continuation any longer.")
+    //     def throw(retval): ball.retval = retval; raise ball
+    //     try:
+    //         return proc(throw)
+    //     except RuntimeWarning as w:
+    //         if w is ball: return ball.retval
+    //         else: raise w
+    
+    
+    function callcc(func) {
+        var ball = new RuntimeWarning("Sorry, can't continue this continuation any longer.");
+        try {
+            return func(function raise(retval) {
+                ball.retval = retval;
+                throw ball;
+            });
+        } 
+        catch (w) {
+            if (w == ball)
+                return ball.retval;
+            else
+                throw w;
+        }
+    }
+
+
+    //utils
     
     function pick(object, keys) {
         var result = reduce(keys, function(acc, key) {
@@ -648,10 +688,17 @@
     
     function SyntaxError(msg) {
         this.msg = 'SyntaxError: ' + msg;
+        output.error(msg);
     }
     
     function RuntimeError(msg) {
         this.msg = 'RuntimeError: ' + msg;
+        output.error(msg);
     }
 
+    function RuntimeWarning(msg) {
+        this.msg = 'RuntimeWarning: ' + msg;
+        output.warn(msg);
+    }
+    
 }));

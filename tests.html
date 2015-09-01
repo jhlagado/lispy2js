@@ -16,6 +16,8 @@
             <div ng-if="!data.passed" style="color:red;">Failed</div>
             <div ng-if="data.expect">Expected: {{data.expect}}</div>
             <div>Result: {{data.result}}</div>
+            <div ng-if="data.output.length">Output:</div>
+            <div ng-repeat="line in data.output track by $index"><i ng-bind="line"></i></div>
         </div>
         <div><a href="index.html">Go back</a>
 
