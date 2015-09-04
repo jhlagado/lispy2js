@@ -230,11 +230,11 @@ angular.module("lispy2Tests", [])
             result: error ? error.msg : lispy2.tostring(result),
             output: output.lines,
         }
-        if (_.isFunction(data.expect)) {
+        if (funk.isfunction(data.expect)) {
             line.passed = data.expect(data, result, error);
         } 
         else {
-            line.passed = _.isEqual(data.expect, result);
+            line.passed = funk.isequal(data.expect, result);
             line.expect = lispy2.tostring(data.expect);
         }
         return line;

@@ -47,6 +47,7 @@
     }
     
     function init() {
+        initFunk();
         initSymbols();
         initGlobals();
         initMacros();
@@ -510,158 +511,11 @@
                 throw w;
         }
     }
-
-
-    //utils
-    
-    function pick(object, keys) {
-        var result = reduce(keys, function(acc, key) {
-            acc[key] = object[key];
-            return acc;
-        }, {});
-        return result;
-    }
-    
-    function zipobject(props, values) {
-        var index = -1, 
-        length = props ? props.length : 0, 
-        result = {};
-        
-        if (length && !values && !isarray(props[0])) {
-            values = [];
-        }
-        while (++index < length) {
-            var key = props[index];
-            if (values) {
-                result[key] = values[index];
-            } else if (key) {
-                result[key[0]] = key[1];
-            }
-        }
-        return result;
-    }
-    
-    function unzip(array) {
-        if (!(array && array.length)) {
-            return [];
-        }
-        var length = 0;
-        array = filter(array, function(group) {
-            if (isarray(group)) {
-                length = Math.max(group.length, length);
-                return true;
-            }
-        });
-        var result = Array(length);
-        var index = -1;
-        while (++index < length) {
-            result[index] = map(array, function(item) {
-                return item[index]
-            });
-        }
-        return result;
-    }
-    
-    
-    function argarray(args) {
-        return Array.prototype.slice.call(args);
-    }
-    
-    function length(x) {
-        if (existy(x) && x.length)
-            return x.length;
-    }
-    
-    function assign() {
-        if (!arguments.length)
-            return;
-        var args = argarray(arguments);
-        var obj = reduce(args.slice(1), function(acc, arg) {
-            for (var key in arg) {
-                if (arg.hasOwnProperty(key)) {
-                    acc[key] = arg[key];
-                }
-            }
-            return acc;
-        }, args[0])
-        return obj;
-    }
-    
-    function map(x, f) {
-        if (x && x.map) {
-            return x.map(f);
-        }
-    }
-    
-    function reduce(x, f, acc) {
-        if (x && x.reduce) {
-            return x.reduce(f, acc);
-        }
-    }
-    
-    function isarray(x) {
-        return Array.isArray(x)
-    }
-    
-    function isempty(x) {
-        return isarray(x) && !x.length
-    }
-    
-    function isobject(x) {
-        return !isarray(x) && x === Object(x);
-    }
-    
-    function isstring(x) {
-        return (typeof x === 'string' || x instanceof String);
-    }
-    
-    function isboolean(x) {
-        return x === true || x === false;
-    }
-    
-    function isfunction(x) {
-        return typeof x == 'function' || false;
-    }
     
     function issymbol(obj) {
         return obj && obj.constructor == Symbol;
     }
-    
-    function filter(array, func) {
-        return array.reduce(function(acc, item) {
-            if (func(item))
-                acc.push(item);
-            return acc;
-        }, [])
-    }
-    
-    function all(x, f) {
-        if (!existy(f))
-            f = function(item) {
-                return item
-            }
-        if (existy(x) && x.every) {
-            return x.every(f);
-        }
-    }
-    
-    function ispair(x) {
-        return isarray(x) && x.length;
-    }
-    
-    function cons(x, y) {
-        if (existy(x))
-            return [x].concat(y);
-    }
-    
-    function isa(x, constructor) {
-        return existy(x) && x.constructor == constructor;
-    }
-    
-    function existy(x) {
-        return x != null;
-    }
-    
+
     function tostring(x) {
         if (x === true)
             return '#t'
@@ -682,10 +536,6 @@
         }
     }
     
-    function startswith(string, target) {
-        return string.indexOf(target) == 0;
-    }
-    
     function SyntaxError(msg) {
         this.msg = 'SyntaxError: ' + msg;
         output.error(msg);
@@ -695,10 +545,39 @@
         this.msg = 'RuntimeError: ' + msg;
         output.error(msg);
     }
-
+    
     function RuntimeWarning(msg) {
         this.msg = 'RuntimeWarning: ' + msg;
         output.warn(msg);
     }
     
+    var pick, zipobject, unzip, argarray, length, assign, map, reduce, isarray, 
+    isempty, isobject, isstring, isboolean, isfunction, filter, all, ispair, 
+    cons, isa, existy, startswith;
+    
+    function initFunk() {
+        pick = funk.pick;
+        zipobject = funk.zipobject;
+        unzip = funk.unzip;
+        argarray = funk.argarray;
+        length = funk.length;
+        assign = funk.assign;
+        map = funk.map;
+        reduce = funk.reduce;
+        isarray = funk.isarray;
+        isempty = funk.isempty;
+        isobject = funk.isobject;
+        isstring = funk.isstring;
+        isboolean = funk.isboolean;
+        isfunction = funk.isfunction;
+        filter = funk.filter;
+        all = funk.all;
+        ispair = funk.ispair;
+        cons = funk.cons;
+        isa = funk.isa;
+        existy = funk.existy;
+        startswith = funk.startswith;
+    
+    }
+
 }));
