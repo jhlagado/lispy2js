@@ -185,7 +185,7 @@ angular.module("lispy2Tests", [])
     
     function expectSymbol(x){
         return function(data, result, error){
-            return result && result.constructor == lispy2.Symbol && 
+            return result && lispy2.issymbol(result) && 
             result.toString() == x;
         }
     }

@@ -20,18 +20,22 @@
     
     lib.setoutput = setoutput;
     lib.run = run;
-    lib.init = init;
     lib.parse = parse;
     lib.evaluate = evaluate;
     lib.tostring = tostring;
     lib.createSym = createSym;
-    lib.Symbol = Symbol;
+    lib.issymbol = issymbol;
     lib.SyntaxError = SyntaxError;
     lib.RuntimeError = RuntimeError;
     
-    var sym, globalEnv, quotes, EOF, macrotable, output;
+    var sym, globalEnv, quotes, EOF, macrotable;
     
-    init();
+    var output = console;
+
+    initFunk();
+    initSymbols();
+    initGlobals();
+    initMacros();
 
     //outputs are objects that support the js logging interface 
     //e.g. console
@@ -44,26 +48,6 @@
         var s = expression; //.replace(/\n/g, ' '); //strip \n
         var p = parse(s);
         return evaluate(p)
-    }
-    
-    function init() {
-        initFunk();
-        initSymbols();
-        initGlobals();
-        initMacros();
-    }
-    
-    function Symbol(str) {
-        this.str = str;
-        this.toString = function() {
-            return this.str;
-        }
-    }
-    
-    function createSym(s) {
-        if (!(s in sym))
-            sym[s] = new Symbol(s);
-        return sym[s];
     }
     
     function parse(s) {
@@ -131,49 +115,6 @@
             return createSym(token);
         else
             return +token; //Cast to number
-    }
-    
-    function createEnv(params, args, outer) {
-        var env = {
-            __outer: outer,
-        };
-        if (issymbol(params))
-            envDefine(env, params, args);
-        else {
-            if (length(args) != length(params)) {
-                throw new SyntaxError('Expected ' + length(params) + 
-                ' args, got ' + length(args) + ' args');
-            }
-            var dict = zipobject(map(params, function(symbol) {
-                return symbol.str;
-            }), args);
-            envAssign(env, dict);
-        }
-        return env;
-    }
-    
-    function findEnv(env, v) {
-        if (v.str in env)
-            return env;
-        else if (env.__outer)
-            return findEnv(env.__outer, v);
-        throw new RuntimeError('Could not lookup ' + v.str);
-    }
-    
-    function envGet(env, v) {
-        return findEnv(env, v)[v.str];
-    }
-    
-    function envDefine(env, v, value) {
-        env[v.str] = value;
-    }
-    
-    function envSet(env, v, value) {
-        return findEnv(env, v)[v.str] = value;
-    }
-    
-    function envAssign(env, dict) {
-        assign(env, dict);
     }
     
     function initSymbols() {
@@ -406,7 +347,7 @@
                     require(x, toplevel, 'define-macro only allowed at top level');
                     var proc = evaluate(exp);
                     require(x, isfunction(proc), 'macro must be a procedure');
-                    macrotable[v.str] = proc; // (define-macro v proc)
+                    macrotable[v] = proc; // (define-macro v proc)
                     return; //  => None; add v:proc to macro_table
                 }
                 return [sym.define, v, exp]
@@ -435,8 +376,8 @@
             require(x, length(x) == 2)
             return expand_quasiquote(x[1])
         } 
-        else if (issymbol(x[0]) && (x[0].str in macrotable)) {
-            return expand(macrotable[x[0].str].apply(null, x.slice(1)), toplevel) // (m arg...) 
+        else if (issymbol(x[0]) && (x[0] in macrotable)) {
+            return expand(macrotable[x[0]].apply(null, x.slice(1)), toplevel) // (m arg...) 
         } 
         else { //        => macroexpand if m isa macro
             return map(x, expand) // (f arg...) => expand each
@@ -480,21 +421,9 @@
         var uz = unzip(bindings);
         var vars = uz[0];
         var vals = uz[1];
-        //[[_lambda, list(vars)]+map(expand, body)] + map(expand, vals)
         var f = [[sym.lambda, vars].concat(map(body, expand))].concat(map(vals, expand));
         return f;
     }
-
-    // def callcc(proc):
-    //     "Call proc with current continuation; escape only"
-    //     ball = RuntimeWarning("Sorry, can't continue this continuation any longer.")
-    //     def throw(retval): ball.retval = retval; raise ball
-    //     try:
-    //         return proc(throw)
-    //     except RuntimeWarning as w:
-    //         if w is ball: return ball.retval
-    //         else: raise w
-    
     
     function callcc(func) {
         var ball = new RuntimeWarning("Sorry, can't continue this continuation any longer.");
@@ -512,30 +441,63 @@
         }
     }
     
-    function issymbol(obj) {
-        return obj && obj.constructor == Symbol;
-    }
 
-    function tostring(x) {
-        if (x === true)
-            return '#t'
-        else if (x === false)
-            return '#f'
-        else if (isNaN(x)) {
-            if (issymbol(x))
-                return x.str;
-            else if (isstring(x))
-                return '"' + x + '"';
-            else if (isarray(x))
-                return '(' + map(x, tostring).join(' ') + ')'
-            else
-                return String(x)
-        } 
-        else {
-            return x;
+    function createSym(s) {
+        if (!(s in sym)) {
+            var sy = new String(s);
+            sy.type = 'symbol';
+            sym[s] = sy;
         }
+        return sym[s];
     }
     
+    function issymbol(obj) {
+        return obj && obj.constructor == String && obj.type == 'symbol';
+    }
+    
+    function createEnv(params, args, outer) {
+        var env = {
+            __outer: outer,
+        };
+        if (issymbol(params))
+            envDefine(env, params, args);
+        else {
+            if (length(args) != length(params)) {
+                throw new SyntaxError('Expected ' + length(params) + 
+                ' args, got ' + length(args) + ' args');
+            }
+            var dict = zipobject(map(params, function(symbol) {
+                return symbol;
+            }), args);
+            envAssign(env, dict);
+        }
+        return env;
+    }
+    
+    function findEnv(env, v) {
+        if (v in env)
+            return env;
+        else if (env.__outer)
+            return findEnv(env.__outer, v);
+        throw new RuntimeError('Could not lookup ' + v);
+    }
+    
+    function envGet(env, v) {
+        return findEnv(env, v)[v];
+    }
+    
+    function envDefine(env, v, value) {
+        env[v] = value;
+    }
+    
+    function envSet(env, v, value) {
+        return findEnv(env, v)[v] = value;
+    }
+    
+    function envAssign(env, dict) {
+        assign(env, dict);
+    }
+
     function SyntaxError(msg) {
         this.msg = 'SyntaxError: ' + msg;
         output.error(msg);
@@ -549,6 +511,26 @@
     function RuntimeWarning(msg) {
         this.msg = 'RuntimeWarning: ' + msg;
         output.warn(msg);
+    }
+    
+    function tostring(x) {
+        if (x === true)
+            return '#t'
+        else if (x === false)
+            return '#f'
+        else if (isNaN(x)) {
+            if (issymbol(x))
+                return x;
+            else if (isstring(x))
+                return '"' + x + '"';
+            else if (isarray(x))
+                return '(' + map(x, tostring).join(' ') + ')'
+            else
+                return String(x)
+        } 
+        else {
+            return x;
+        }
     }
     
     var pick, zipobject, unzip, argarray, length, assign, map, reduce, isarray, 
